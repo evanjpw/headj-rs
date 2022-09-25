@@ -1,0 +1,123 @@
+use eyre::Result;
+use json_event_parser::JsonEvent;
+use std::iter::Iterator;
+use std::ops::Index;
+
+#[derive(Clone, Debug)]
+pub enum OwnedJsonEvent {
+    String(String),
+    Number(String),
+    Boolean(bool),
+    Null,
+    StartArray,
+    EndArray,
+    StartObject,
+    EndObject,
+    ObjectKey(String),
+    Eof,
+}
+
+impl OwnedJsonEvent {
+    pub fn as_json_event(&self) -> JsonEvent {
+        match self {
+            Self::String(s) => JsonEvent::String(s),
+            Self::Number(s) => JsonEvent::Number(s),
+            Self::ObjectKey(s) => JsonEvent::ObjectKey(s),
+            Self::Boolean(b) => JsonEvent::Boolean(*b),
+            Self::Null => JsonEvent::Null,
+            Self::StartArray => JsonEvent::StartArray,
+            Self::EndArray => JsonEvent::EndArray,
+            Self::StartObject => JsonEvent::StartObject,
+            Self::EndObject => JsonEvent::EndObject,
+            Self::Eof => JsonEvent::Eof,
+        }
+    }
+}
+
+pub struct KeyPath {
+    json_path: Vec<OwnedJsonEvent>,
+}
+
+impl KeyPath {
+    pub fn from_kp_str(key_path_str: &str) -> Result<Self> {
+        let mut json_path = Vec::new();
+        let mut quote = false;
+        let mut current_key = String::new();
+        for c in key_path_str.chars() {
+            if quote {
+                current_key.push(c);
+                quote = false;
+            } else {
+                match c {
+                    // TODO: add brackets
+                    '\\' => quote = true,
+                    '.' => {
+                        let element = OwnedJsonEvent::ObjectKey(std::mem::take(&mut current_key));
+                        json_path.push(element);
+                    }
+                    _ => current_key.push(c),
+                }
+            };
+        }
+        Ok(Self { json_path })
+    }
+
+    pub fn iterator(&self) -> impl Iterator<Item = &OwnedJsonEvent> + '_ {
+        self.json_path.iter()
+    }
+
+    pub fn len(&self) -> usize {
+        self.json_path.len()
+    }
+}
+
+impl Default for KeyPath {
+    fn default() -> Self {
+        Self {
+            json_path: Vec::new(),
+        }
+    }
+}
+
+impl Index<usize> for KeyPath {
+    type Output = OwnedJsonEvent;
+    fn index(&self, idx: usize) -> &Self::Output {
+        &self.json_path[idx]
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::key_path::OwnedJsonEvent;
+    use json_event_parser::JsonEvent;
+
+    #[test]
+    fn test_owned_json_event() {
+        let e = OwnedJsonEvent::ObjectKey(String::from("key"));
+        assert_eq!(e.as_json_event(), JsonEvent::ObjectKey("key"));
+        let e = OwnedJsonEvent::String(String::from("string"));
+        assert_eq!(e.as_json_event(), JsonEvent::String("string"));
+        let e = OwnedJsonEvent::Number(String::from("27"));
+        assert_eq!(e.as_json_event(), JsonEvent::Number("27"));
+        let e = OwnedJsonEvent::Boolean(true);
+        assert_eq!(e.as_json_event(), JsonEvent::Boolean(true));
+        assert_eq!(OwnedJsonEvent::Null.as_json_event(), JsonEvent::Null);
+        assert_eq!(OwnedJsonEvent::Eof.as_json_event(), JsonEvent::Eof);
+        assert_eq!(
+            OwnedJsonEvent::StartArray.as_json_event(),
+            JsonEvent::StartArray
+        );
+        assert_eq!(
+            OwnedJsonEvent::EndArray.as_json_event(),
+            JsonEvent::EndArray
+        );
+        assert_eq!(
+            OwnedJsonEvent::StartObject.as_json_event(),
+            JsonEvent::StartObject
+        );
+        assert_eq!(
+            OwnedJsonEvent::EndObject.as_json_event(),
+            JsonEvent::EndObject
+        );
+    }
+}
