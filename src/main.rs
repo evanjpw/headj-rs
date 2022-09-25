@@ -1,10 +1,11 @@
 extern crate headj;
 use clap::Parser;
+use env_logger::builder;
 use eyre::Result;
 use headj::copy_loop::copy_loop;
 use headj::copy_selector::CopySelector;
 use headj::key_path::KeyPath;
-use headj::EConsole;
+use log::{error, LevelFilter};
 use std::fs::File;
 #[allow(unused_imports)]
 use std::io::{self, BufRead, Read, Write};
@@ -26,9 +27,9 @@ struct Args {
     #[clap(short, long, action)]
     no_context: bool,
     #[clap(short, long, value_parser, default_value_t = 0)]
-    skip: u32,
+    skip: usize,
     #[clap(short, long, value_parser, default_value_t = 100)]
-    count: u32,
+    count: usize,
     #[clap(short, long, action = clap::ArgAction::Count)]
     debug: u8,
 }
@@ -54,17 +55,30 @@ fn perform_copy(args: Args) -> Result<()> {
     Ok(())
 }
 
+fn setup_logging(quiet: bool, debug: u8, _use_stderr: Option<bool>) {
+    let level = if quiet {
+        LevelFilter::Off
+    } else {
+        match debug {
+            0 => LevelFilter::Info,
+            1 => LevelFilter::Debug,
+            _ => LevelFilter::Trace,
+        }
+    };
+    builder()
+        .filter_level(level)
+        .format(|buf, record| writeln!(buf, "{}", record.args()))
+        .init()
+}
 fn main() {
     let args = Args::parse();
     let quiet = args.quiet;
     let debug = args.debug;
-    EConsole::init(quiet, debug, None).expect("EConsole init failed");
+    setup_logging(quiet, debug, None);
     match perform_copy(args) {
         Ok(_) => {}
         Err(e) => {
-            //
-            EConsole::console().error(&format!("Error: {e}"))
-.expect(" if !qui {i}");
+            error!("Error: {e}");
         }
     }
 }

@@ -18,7 +18,7 @@ pub fn copy_loop<R: BufRead, W: Write>(
         if event == JsonEvent::Eof {
             return Ok(());
         }
-        let copy_to_out = cs.select(event);
+        let copy_to_out = cs.select(event)?;
         if copy_to_out {
             outj.write_event(event)?;
         }

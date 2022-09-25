@@ -2,12 +2,12 @@
 
 A utility that converts input JSON arrays into valid JSON that contains only a subset of the elements
 
-[![PyPI](https://img.shields.io/pypi/v/headj?style=flat-square)](https://pypi.org/project/headj)
-[![PyPI - Implementation](https://img.shields.io/pypi/implementation/headj?style=flat-square)](https://pypi.org/project/headj)
-[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/headj?style=flat-square)](https://pypi.org/project/headj)
-[![PyPI - Downloads](https://img.shields.io/pypi/dm/headj?style=flat-square)](https://pypistats.org/packages/headj)
-[![PyPI - License](https://img.shields.io/pypi/l/headj?style=flat-square)](https://opensource.org/licenses/MIT)
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![crates.io](https://img.shields.io/crates/v/headj.svg)](https://crates.io/crates/headj)
+[![docs.rs](https://docs.rs/headj/badge.svg)](https://docs.rs/headj)
+[![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE-MIT)
+[![Latest version](https://img.shields.io/crates/v/headj.svg)](https://crates.io/crates/headj)
+[![All downloads](https://img.shields.io/crates/d/headj.svg)](https://crates.io/crates/headj)
+[![Downloads of latest version](https://img.shields.io/crates/dv/headj.svg)](https://crates.io/crates/headj)
 
 ## Description
 
@@ -37,9 +37,9 @@ array.
 
 It appears to work, but I'm working on it.
 
-One very large caveat is: **It freely discards JSON that surrounds the array of interest. So, if you have
+One very large caveat is: ~~It freely discards JSON that surrounds the array of interest. So, if you have
 a complex JSON object with a huge array in it, you will get a JSON file back that only includes the
-(reduced) array & whatever JSON structure it was found in. Everything else will be elided.**
+(reduced) array & whatever JSON structure it was found in. Everything else will be elided.~~ **(This actually works correctly now)**
 
 For example:
 
@@ -75,10 +75,10 @@ output
 
 ## Installation
 
-### With `pipx`
+### With `Cargo`
 
 ```shell
-pipx install headj
+cargo install headj
 ```
 
 ## Usage
@@ -195,7 +195,7 @@ JSON
   not necessarily start at the root, which would be potentially confusing. Insisting that users begin
   with a '`$`' would likely seem arbitrary & annoying. So, the "just dots & backslashes" implementation seemed
   reasonable.
-* The deletion of all JSON elements except the ones of interest is "bad". It needs to be fixed (or at least optional).
+* ~~The deletion of all JSON elements except the ones of interest is "bad". It needs to be fixed (or at least optional).~~
 * The error messages can be comically unhelpful.
 * The examples could be improved a trifle.
 

@@ -8,12 +8,13 @@ enum TargetPlacement {
     InsideTarget,
     AfterTarget,
 }
-
+// 32
 struct JsonFileState {
     keys: KeyPath,
     target_placement: TargetPlacement,
-    target_index: u32,
+    target_index: usize,
     keys_index: usize,
+    sub_elements: usize,
 }
 
 impl JsonFileState {
@@ -23,6 +24,22 @@ impl JsonFileState {
             target_placement: BeforeTarget,
             target_index: 0,
             keys_index: 0,
+            sub_elements: 0,
+        }
+    }
+
+    fn in_sub_element(&self) -> bool {
+        self.sub_elements != 0
+    }
+
+    fn next_element(&mut self, event: &JsonEvent) {
+        match event {
+            JsonEvent::StartArray | JsonEvent::StartObject => self.sub_elements += 1,
+            JsonEvent::EndArray | JsonEvent::EndObject => self.sub_elements -= 1,
+            _ => {}
+        }
+        if self.sub_elements == 0 {
+            self.target_index += 1;
         }
     }
 
@@ -46,14 +63,14 @@ impl JsonFileState {
 }
 
 pub struct CopySelector {
-    count: u32,
-    skip: u32,
+    count: usize,
+    skip: usize,
     no_context: bool,
     json_file_state: JsonFileState,
 }
 
 impl CopySelector {
-    pub fn new(keys: KeyPath, count: u32, skip: u32, no_context: bool) -> Self {
+    pub fn new(keys: KeyPath, count: usize, skip: usize, no_context: bool) -> Self {
         let json_file_state = JsonFileState::new(keys);
         Self {
             count,
@@ -70,19 +87,31 @@ impl CopySelector {
             BeforeTarget => {
                 if let Some(current_key) = state.current_key() {
                     // See if we're at a key that matches the current key
+                    if current_key.as_json_event() == event {
+                        let _ = state.next_key();
+                        return Ok(true);
+                    }
                 } else if event == JsonEvent::StartArray {
                     state.target_placement = TargetPlacement::InsideTarget;
                     return Ok(true);
                 } else {
-                    return Err(eyre!("Expecting Json array, found {event}"));
+                    return Err(eyre!("Expecting Json array, found {event:?}"));
                 }
                 Ok(allow_context)
             }
-            InsideTarget => {
-                // Perform the skip logic
+            TargetPlacement::InsideTarget => {
+                if event == JsonEvent::EndArray && !state.in_sub_element() {
+                    state.target_placement = TargetPlacement::AfterTarget;
+                } else {
+                    // Perform the skip logic
+                    let index = state.target_index;
+                    let skipping = index < self.skip || index >= (self.count + self.skip);
+                    state.next_element(&event);
+                    return Ok(!skipping);
+                }
                 Ok(true)
             }
-            AfterTarget => Ok(allow_context),
+            TargetPlacement::AfterTarget => Ok(allow_context),
         }
     }
 }
