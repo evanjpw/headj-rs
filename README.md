@@ -84,26 +84,25 @@ cargo install headj
 ## Usage
 
 ```
-usage: headj [-h] [-q] [-k KEYS] [-c COUNT] [-s SKIP] [-f] [-o OUTPUT] [-d] [-t] [infile]
+USAGE:
+    headj [OPTIONS] [INPUT_FILE]
 
-positional arguments:
-  infile                The JSON file to read from. If none is specified, reads from
-                        Standard Input
+ARGS:
+    <INPUT_FILE>    The JSON file to read from. If none is specified, reads from Standard Input
 
-optional arguments:
-  -h, --help            show this help message and exit
-  -q, --quiet           Don't print any status, diagnostic or error messages
-  -k KEYS, --key KEYS   The JSON key of the array to copy from. If none specified, treat
-                        the input JSON as an array.
-  -c COUNT, --count COUNT
-                        Number of elements to copy to the output (default: 100)
-  -s SKIP, --skip SKIP  Number of elements to skip before copying (default: 0)
-  -f, --format          Nicely format the output JSON with indentation & newlines.
-  -o OUTPUT, --output OUTPUT
-                        File to write the JSON results to (default: Standard Output)
-  -d, --debug           Activate extra debugging output
-  -t, --trace           Show a stack trace for exceptions
-
+OPTIONS:
+    -c, --count <COUNT>          Number of elements to copy to the output (default: 100) [default:
+                                 100]
+    -d, --debug                  Activate extra debugging output
+    -f, --format-output          Nicely format the output JSON with indentation & newlines
+    -h, --help                   Print help information
+    -k, --key <KEY>              The JSON key of the array to copy from. If none specified, treat
+                                 the input JSON as an array
+    -n, --no-context             Output _only_ the target JSON array
+    -o, --out-file <OUT_FILE>    File to write the JSON results to (default: Standard Output)
+    -q, --quiet                  Don't print any status, diagnostic or error messages
+    -s, --skip <SKIP>            Number of elements to skip before copying (default: 0) [default: 0]
+    -V, --version                Print version information
 ```
 
 ## Examples

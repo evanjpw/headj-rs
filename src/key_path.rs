@@ -3,7 +3,7 @@ use json_event_parser::JsonEvent;
 use std::iter::Iterator;
 use std::ops::Index;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum OwnedJsonEvent {
     String(String),
     Number(String),
@@ -34,16 +34,19 @@ impl OwnedJsonEvent {
     }
 }
 
+#[derive(Default)]
 pub struct KeyPath {
     json_path: Vec<OwnedJsonEvent>,
 }
 
+#[allow(clippy::len_without_is_empty)]
 impl KeyPath {
     pub fn from_kp_str(key_path_str: &str) -> Result<Self> {
         let mut json_path = Vec::new();
         let mut quote = false;
         let mut current_key = String::new();
         for c in key_path_str.chars() {
+            // dbg!(c,&json_path, &current_key, &quote);
             if quote {
                 current_key.push(c);
                 quote = false;
@@ -53,11 +56,17 @@ impl KeyPath {
                     '\\' => quote = true,
                     '.' => {
                         let element = OwnedJsonEvent::ObjectKey(std::mem::take(&mut current_key));
+                        // dbg!(&element);
                         json_path.push(element);
+                        current_key = String::new();
                     }
                     _ => current_key.push(c),
                 }
             };
+        }
+        if !current_key.is_empty() {
+            let element = OwnedJsonEvent::ObjectKey(std::mem::take(&mut current_key));
+            json_path.push(element);
         }
         Ok(Self { json_path })
     }
@@ -71,14 +80,6 @@ impl KeyPath {
     }
 }
 
-impl Default for KeyPath {
-    fn default() -> Self {
-        Self {
-            json_path: Vec::new(),
-        }
-    }
-}
-
 impl Index<usize> for KeyPath {
     type Output = OwnedJsonEvent;
     fn index(&self, idx: usize) -> &Self::Output {
@@ -88,7 +89,7 @@ impl Index<usize> for KeyPath {
 
 #[cfg(test)]
 mod tests {
-    use crate::key_path::OwnedJsonEvent;
+    use crate::key_path::{KeyPath, OwnedJsonEvent};
     use json_event_parser::JsonEvent;
 
     #[test]
@@ -119,5 +120,19 @@ mod tests {
             OwnedJsonEvent::EndObject.as_json_event(),
             JsonEvent::EndObject
         );
+    }
+
+    #[test]
+    fn test_blank_key_path() {
+        let key_path = KeyPath::from_kp_str("").unwrap();
+        assert_eq!(0, key_path.len())
+    }
+
+    #[test]
+    fn test_one_element() {
+        let key_path = KeyPath::from_kp_str("foo").unwrap();
+        assert_eq!(1, key_path.len());
+        let event_0 = OwnedJsonEvent::ObjectKey("foo".to_string());
+        assert_eq!(event_0, key_path[0]);
     }
 }

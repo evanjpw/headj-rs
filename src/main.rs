@@ -14,22 +14,31 @@ use std::path::PathBuf;
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
 struct Args {
+    ///The JSON file to read from. If none is specified, reads from Standard Input
     #[clap(value_parser)]
     input_file: Option<PathBuf>,
+    /// File to write the JSON results to (default: Standard Output)
     #[clap(short, long, value_parser)]
     out_file: Option<PathBuf>,
+    /// The JSON key of the array to copy from. If none specified, treat the input JSON as an array.
     #[clap(short, long, value_parser)]
     key: Option<String>,
+    /// Nicely format the output JSON with indentation & newlines.
     #[clap(short, long, action)]
     format_output: bool,
+    /// Don't print any status, diagnostic or error messages
     #[clap(short, long, action)]
     quiet: bool,
+    /// Output _only_ the target JSON array
     #[clap(short, long, action)]
     no_context: bool,
+    /// Number of elements to skip before copying (default: 0)
     #[clap(short, long, value_parser, default_value_t = 0)]
     skip: usize,
+    /// Number of elements to copy to the output (default: 100)
     #[clap(short, long, value_parser, default_value_t = 100)]
     count: usize,
+    /// Activate extra debugging output
     #[clap(short, long, action = clap::ArgAction::Count)]
     debug: u8,
 }
@@ -40,7 +49,7 @@ fn perform_copy(args: Args) -> Result<()> {
     } else {
         KeyPath::default()
     };
-    let out_writer: Box<dyn Write> = if let Some(out_file) = args.out_file {
+    let mut out_writer: Box<dyn Write> = if let Some(out_file) = args.out_file {
         Box::new(File::create(out_file)?)
     } else {
         Box::new(io::stdout())
@@ -51,7 +60,7 @@ fn perform_copy(args: Args) -> Result<()> {
         Box::new(io::stdin().lock())
     };
     let mut copy_selector = CopySelector::new(key_path, args.count, args.skip, args.no_context);
-    copy_loop(in_reader, out_writer, &mut copy_selector)?;
+    copy_loop(in_reader, &mut out_writer, &mut copy_selector)?;
     Ok(())
 }
 

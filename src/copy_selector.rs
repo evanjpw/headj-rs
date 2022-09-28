@@ -1,14 +1,14 @@
-use crate::copy_selector::TargetPlacement::BeforeTarget;
 use crate::key_path::{KeyPath, OwnedJsonEvent};
 use eyre::{eyre, Result};
 use json_event_parser::JsonEvent;
 
+#[derive(Debug, PartialEq)]
 enum TargetPlacement {
-    BeforeTarget,
-    InsideTarget,
-    AfterTarget,
+    Before,
+    Inside,
+    After,
 }
-// 32
+
 struct JsonFileState {
     keys: KeyPath,
     target_placement: TargetPlacement,
@@ -21,7 +21,7 @@ impl JsonFileState {
     fn new(keys: KeyPath) -> Self {
         Self {
             keys,
-            target_placement: BeforeTarget,
+            target_placement: TargetPlacement::Before,
             target_index: 0,
             keys_index: 0,
             sub_elements: 0,
@@ -83,35 +83,40 @@ impl CopySelector {
     pub fn select(&mut self, event: JsonEvent) -> Result<bool> {
         let state = &mut self.json_file_state;
         let allow_context = !self.no_context;
+        // dbg!(&event, &state.target_placement, &state.current_key());
         match &state.target_placement {
-            BeforeTarget => {
+            TargetPlacement::Before => {
                 if let Some(current_key) = state.current_key() {
                     // See if we're at a key that matches the current key
                     if current_key.as_json_event() == event {
                         let _ = state.next_key();
-                        return Ok(true);
+                        return Ok(allow_context);
                     }
                 } else if event == JsonEvent::StartArray {
-                    state.target_placement = TargetPlacement::InsideTarget;
+                    state.target_placement = TargetPlacement::Inside;
                     return Ok(true);
                 } else {
                     return Err(eyre!("Expecting Json array, found {event:?}"));
                 }
                 Ok(allow_context)
             }
-            TargetPlacement::InsideTarget => {
+            TargetPlacement::Inside => {
                 if event == JsonEvent::EndArray && !state.in_sub_element() {
-                    state.target_placement = TargetPlacement::AfterTarget;
+                    state.target_placement = TargetPlacement::After;
+                    Ok(true)
                 } else {
                     // Perform the skip logic
                     let index = state.target_index;
                     let skipping = index < self.skip || index >= (self.count + self.skip);
                     state.next_element(&event);
-                    return Ok(!skipping);
+                    Ok(!skipping)
                 }
-                Ok(true)
             }
-            TargetPlacement::AfterTarget => Ok(allow_context),
+            TargetPlacement::After => Ok(allow_context),
         }
+    }
+
+    pub fn target_copied(&self) -> bool {
+        self.json_file_state.target_placement == TargetPlacement::After
     }
 }
