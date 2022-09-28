@@ -123,7 +123,7 @@ mod tests {
         let result = run_run_headj("{\"foo\":[1,2,3,4,5]}", "foo", 100, 0, true).unwrap();
         assert_eq!("[1,2,3,4,5]", result.as_str());
     }
-//fals
+
     #[test]
     fn test_complex_elements_key_no_context() {
         let result = run_run_headj(
@@ -162,36 +162,26 @@ mod tests {
         .unwrap();
         assert_eq!("[{\"c\":[3]},{\"d\":[4]}]", result.as_str());
     }
+
+    #[test]
+    ///         headj -k 'foo.bar' -c 2 -s 2 <<- JSON
+    ///         {"foo":{"bar":[1,2,3,4,5]}}
+    ///         JSON
+    ///         # Output: [3, 4]
+    fn test_object_2_keys_2_count_2_skip_context_format() {
+        let result =
+            run_run_headj("{\"foo\":{\"bar\":[1,2,3,4,5]}}", "foo.bar", 2, 2, false).unwrap();
+        assert_eq!("{\"foo\":{\"bar\":[3,4]}}", result.as_str())
+    }
+
     //***
     /*
-    deself:
-    oself.''keys=    []
-    assert o ==
-    def test_object_2_keys_2_count_2_skip_context_format(self):
-    //         headj -k 'foo.bar' -c 2 -s 2 <<- JSON
-    //         {"foo":{"bar":[1,2,3,4,5]}}
-    //         JSON
-    //         # Output: [3, 4]
-    o = self.run_run_headj(
-    '{"foo":{"bar":[1,2,3,4,5]}}',
-    keys=["foo", "bar"],
-    count=2,
-    skip=2,
-    in_context=True,
-    format_json=True,
-    )
-    assert (
-    o
-    == '{\n     "foo": {\n          "bar": [\n               3,\n'
-    + "               4\n          ]\n     }\n}"
-    )
-
+            //// headj -k 'foo.bar' -c 2 -s 2 <<- JSON
+            /// {"foo":{"bar":[1,2,3,4,5]}}
+            /// JSON
+            /// # Output: [3, 4]
     def test_object_2_keys_2_count_2_skip_context(self):
     """
-            headj -k 'foo.bar' -c 2 -s 2 <<- JSON
-            {"foo":{"bar":[1,2,3,4,5]}}
-            JSON
-            # Output: [3, 4]
             """
     o = self.run_run_headj(
     '{"foo":{"bar":[1,2,3,4,5]}}',

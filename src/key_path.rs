@@ -46,7 +46,6 @@ impl KeyPath {
         let mut quote = false;
         let mut current_key = String::new();
         for c in key_path_str.chars() {
-            // dbg!(c,&json_path, &current_key, &quote);
             if quote {
                 current_key.push(c);
                 quote = false;
@@ -56,7 +55,6 @@ impl KeyPath {
                     '\\' => quote = true,
                     '.' => {
                         let element = OwnedJsonEvent::ObjectKey(std::mem::take(&mut current_key));
-                        // dbg!(&element);
                         json_path.push(element);
                         current_key = String::new();
                     }

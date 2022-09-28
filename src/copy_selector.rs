@@ -83,7 +83,6 @@ impl CopySelector {
     pub fn select(&mut self, event: JsonEvent) -> Result<bool> {
         let state = &mut self.json_file_state;
         let allow_context = !self.no_context;
-        // dbg!(&event, &state.target_placement, &state.current_key());
         match &state.target_placement {
             TargetPlacement::Before => {
                 if let Some(current_key) = state.current_key() {
