@@ -87,6 +87,7 @@ impl Index<usize> for KeyPath {
 
 #[cfg(test)]
 mod tests {
+    use crate::key_path::OwnedJsonEvent::ObjectKey;
     use crate::key_path::{KeyPath, OwnedJsonEvent};
     use json_event_parser::JsonEvent;
 
@@ -127,10 +128,46 @@ mod tests {
     }
 
     #[test]
+    fn test_one_element_with_backslash_dot() {
+        let key_path = KeyPath::from_kp_str("foo\\.bar").unwrap();
+        assert_eq!(1, key_path.len());
+        let event_0 = OwnedJsonEvent::ObjectKey("foo.bar".to_string());
+        assert_eq!(event_0, key_path[0]);
+    }
+
+    #[test]
     fn test_one_element() {
         let key_path = KeyPath::from_kp_str("foo").unwrap();
         assert_eq!(1, key_path.len());
         let event_0 = OwnedJsonEvent::ObjectKey("foo".to_string());
         assert_eq!(event_0, key_path[0]);
+    }
+
+    #[test]
+    fn test_three_elements_with_backslash() {
+        let key_path = KeyPath::from_kp_str("foo.bar\\\\.baz").unwrap();
+        assert_eq!(3, key_path.len());
+        let events = [
+            ObjectKey("foo".to_string()),
+            ObjectKey("bar\\".to_string()),
+            ObjectKey("baz".to_string()),
+        ];
+        for index in 0..2 {
+            assert_eq!(events[index], key_path[index]);
+        }
+    }
+
+    #[test]
+    fn test_three_elements() {
+        let key_path = KeyPath::from_kp_str("foo.bar.baz").unwrap();
+        assert_eq!(3, key_path.len());
+        let events = [
+            ObjectKey("foo".to_string()),
+            ObjectKey("bar".to_string()),
+            ObjectKey("baz".to_string()),
+        ];
+        for index in 0..2 {
+            assert_eq!(events[index], key_path[index]);
+        }
     }
 }

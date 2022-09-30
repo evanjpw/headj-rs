@@ -1,6 +1,6 @@
 [package]
 name = "headj"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description="A utility that converts input JSON arrays into valid JSON that contains only a subset of the elements"
 readme="README.md"
@@ -16,9 +16,9 @@ categories = []
 [dependencies]
 clap = {version = "3.2.22", features = ["derive"] }
 env_logger = "0.9.1"
-
 eyre = "0.6.8"
 json-event-parser = "0.1.1"
 log = "0.4.17"
+
 
 serde = "1.0.145"

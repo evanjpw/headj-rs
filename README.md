@@ -197,6 +197,7 @@ JSON
 * ~~The deletion of all JSON elements except the ones of interest is "bad". It needs to be fixed (or at least optional).~~
 * The error messages can be comically unhelpful.
 * The examples could be improved a trifle.
+* The `--format` option currently **DOES NOTHING**. Working on it.
 
 ## License
 

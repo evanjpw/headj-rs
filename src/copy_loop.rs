@@ -16,11 +16,11 @@ pub fn copy_loop<R: BufRead, W: Write>(
     loop {
         let event = inj.read_event(&mut buff)?;
         if event == JsonEvent::Eof {
-            if cs.target_copied() {
-                return Ok(());
+            return if cs.target_copied() {
+                Ok(())
             } else {
-                return Err(eyre!("Did not complete JSON copy"));
-            }
+                Err(eyre!("Did not complete JSON copy"))
+            };
         }
         let copy_to_out = cs.select(event)?;
         if copy_to_out {
@@ -174,109 +174,120 @@ mod tests {
         assert_eq!("{\"foo\":{\"bar\":[3,4]}}", result.as_str())
     }
 
-    //***
-    /*
-            //// headj -k 'foo.bar' -c 2 -s 2 <<- JSON
-            /// {"foo":{"bar":[1,2,3,4,5]}}
-            /// JSON
-            /// # Output: [3, 4]
-    def test_object_2_keys_2_count_2_skip_context(self):
-    """
-            """
-    o = self.run_run_headj(
-    '{"foo":{"bar":[1,2,3,4,5]}}',
-    keys=["foo", "bar"],
-    count=2,
-    skip=2,
-    in_context=True,
-    )
-    assert o == '{"foo": {"bar": [3, 4]}}'
+    #[test]
+    /// headj -k 'foo.bar' -c 2 -s 2 <<- JSON
+    /// {"foo":{"bar":[1,2,3,4,5]}}
+    /// JSON
+    /// # Output: [3, 4]
+    fn test_object_2_keys_2_count_2_skip_context() {
+        let result =
+            run_run_headj("{\"foo\":{\"bar\":[1,2,3,4,5]}}", "foo.bar", 2, 2, false).unwrap();
+        assert_eq!("{\"foo\":{\"bar\":[3,4]}}", result.as_str());
+    }
 
-    def test_object_2_keys_2_count_2_skip(self):
-    //         headj -k 'foo.bar' -c 2 -s 2 <<- JSON
-    //         {"foo":{"bar":[1,2,3,4,5]}}
-    //         JSON
-    //         # Output: [3, 4]
-    o = self.run_run_headj(
-    '{"foo":{"bar":[1,2,3,4,5]}}', keys=["foo", "bar"], count=2, skip=2
-    )
-    assert o == "[3, 4]"
+    #[test]
+    /// headj -k 'foo.bar' -c 2 -s 2 <<- JSON
+    /// {"foo":{"bar":[1,2,3,4,5]}}
+    /// JSON
+    /// # Output: [3, 4]
+    fn test_object_2_keys_2_count_2_skip() {
+        let result =
+            run_run_headj("{\"foo\":{\"bar\":[1,2,3,4,5]}}", "foo.bar", 2, 2, true).unwrap();
+        assert_eq!("[3,4]", result.as_str());
+    }
 
-    def test_object_1_key_2_count_2_skip_context(self):
-    //         headj -k 'foo' -c 2 -s 2 <<- JSON
-    //         {"foo":[1,2,3,4,5]}
-    //         JSON
-    //         # Output: [3, 4]
-    o = self.run_run_headj(
-    '{"foo":[1,2,3,4,5]}', keys=["foo"], count=2, skip=2, in_context=True
-    )
-    assert o == '{"foo": [3, 4]}'
+    #[test]
+    /// headj -k 'foo' -c 2 -s 2 <<- JSON
+    /// {"foo":[1,2,3,4,5]}
+    /// JSON
+    /// # Output: [3, 4]
+    fn test_object_1_key_2_count_2_skip_context() {
+        let result = run_run_headj("{\"foo\":[1,2,3,4,5]}", "foo", 2, 2, false).unwrap();
+        assert_eq!("{\"foo\":[3,4]}", result.as_str());
+    }
 
-    def test_object_1_key_2_count_2_skip(self):
-    //         headj -k 'foo' -c 2 -s 2 <<- JSON
-    //         {"foo":[1,2,3,4,5]}
-    //         JSON
-    //         # Output: [3, 4]
-    o = self.run_run_headj('{"foo":[1,2,3,4,5]}', keys=["foo"], count=2, skip=2)
-    assert o == "[3, 4]"
-     */
+    #[test]
+    /// headj -k 'foo' -c 2 -s 2 <<- JSON
+    /// {"foo":[1,2,3,4,5]}
+    /// JSON
+    /// # Output: [3, 4]
+    fn test_object_1_key_2_count_2_skip() {
+        let result = run_run_headj("{\"foo\":[1,2,3,4,5]}", "foo", 2, 2, true).unwrap();
+        assert_eq!("[3,4]", result.as_str());
+    }
 
-    /*
-    def test_no_input_with_key(self):
-    //         headj -k 'foo' /dev/null
-    //         # Error: cannot unpack non-iterable NoneType object
-    with pytest.raises(StopIteration):
-    _ = self.run_run_headj("", keys=["foo"])
+    #[test]
+    /// headj -k 'foo' /dev/null
+    /// # Error: cannot unpack non-iterable NoneType object
+    fn test_no_input_with_key() {
+        let e = run_run_headj("", "foo", 100, 0, false)
+            .unwrap_err()
+            .to_string();
+        assert_eq!("unexpected end of file", e.as_str());
+    }
 
-    def test_incorect_first_key(self):
-    // headj -k 'fooo.bar' -c 2 -s 2 <<- JSON
-    //         {"foo":{
-    //         "bar":[1,2,3,4,5]}
-    //         }
-    //         JSON
-    //         # Error: Could not find key "fooo" in object "<TransientStreamingJSONObject: TRANSIENT, DONE>".
-    with pytest.raises(JSONProcessingError):
-    _ = self.run_run_headj(
-    "\n                {"foo":{\n                \"bar\":[1,2,3,4,5]}\n                }\n",
-    keys=["fooo", "bar"],
-    count=2,
-    skip=2,
-    )
+    #[test]
+    /// headj -k 'fooo.bar' -c 2 -s 2 <<- JSON
+    /// {"foo":{
+    /// "bar":[1,2,3,4,5]}
+    /// }
+    /// JSON
+    /// # Error: Could not find key "fooo" in object "<TransientStreamingJSONObject: TRANSIENT, DONE>".
+    fn test_incorect_first_key() {
+        let e = run_run_headj(
+            "\n                {\"foo\":{\n                \"bar\":[1,2,3,4,5]}\n                }\n",
+            "fooo.bar",
+            2,
+            2,false
+        ).unwrap_err().to_string();
+        assert_eq!("Did not complete JSON copy", e.as_str());
+    }
 
-    def test_incorrect_key(self):
-    //         headj -k 'foo' -c 2 -s 2 <<- JSON
-    //         {"bar":[1,2,3,4,5]}
-    //         JSON
-    //         # Error: Could not find key "foo" in object "<TransientStreamingJSONObject: TRANSIENT, DONE>".
-    with pytest.raises(JSONProcessingError):
-    _ = self.run_run_headj('{"bar":[1,2,3,4,5]}', keys=["foo"], count=2, skip=2)
+    #[test]
+    /// headj -k 'foo' -c 2 -s 2 <<- JSON
+    /// {"bar":[1,2,3,4,5]}
+    /// JSON
+    /// # Error: Could not find key "foo" in object "<TransientStreamingJSONObject: TRANSIENT, DONE>".
+    fn test_incorrect_key() {
+        let e = run_run_headj("{\"bar\":[1,2,3,4,5]}", "foo", 2, 2, false)
+            .unwrap_err()
+            .to_string();
+        assert_eq!("Did not complete JSON copy", e.as_str());
+    }
 
-    def test_array_with_key(self):
-    //         headj -k 'foo' <<- JSON
-    //         [1,2,3,4,5]
-    //         JSON
-    //         # Error: Could not look up key "foo" in non-dictionary-object '<TransientStreamingJSONList:  #TRANSIENT, STREAMING>'.
-    with pytest.raises(JSONProcessingError):
-    _ = self.run_run_headj("[1,2,3,4,5]", keys=["foo"])
+    #[test]
+    /// headj -k 'foo' <<- JSON
+    /// [1,2,3,4,5]
+    /// JSON
+    /// # Error: Could not look up key "foo" in non-dictionary-object '<TransientStreamingJSONList:  #TRANSIENT, STREAMING>'.
+    fn test_array_with_key() {
+        let e = run_run_headj("[1,2,3,4,5]", "foo", 100, 0, false)
+            .unwrap_err()
+            .to_string();
+        assert_eq!("Did not complete JSON copy", e.as_str());
+    }
 
-    def test_incorrect_second_key(self):
-    //         headj -k 'foo.barz' -c 2 -s 2 <<- JSON
-    //         {"foo":{"bar":[1,2,3,4,5]}}
-    //         JSON
-    //         # Error: Could not find key "barz" in object "<TransientStreamingJSONObject: TRANSIENT, DONE>".
-    with pytest.raises(JSONProcessingError):
-    _ = self.run_run_headj(
-    '{"foo":{"bar":[1,2,3,4,5]}}', keys=["foo", "barz"], count=2, skip=2
-    )
+    #[test]
+    /// headj -k 'foo.barz' -c 2 -s 2 <<- JSON
+    /// {"foo":{"bar":[1,2,3,4,5]}}
+    /// JSON
+    /// # Error: Could not find key "barz" in object "<TransientStreamingJSONObject: TRANSIENT, DONE>".
+    fn test_incorrect_second_key() {
+        let e = run_run_headj("{\"foo\":{\"bar\":[1,2,3,4,5]}}", "foo.barz", 2, 2, false)
+            .unwrap_err()
+            .to_string();
+        assert_eq!("Did not complete JSON copy", e.as_str());
+    }
 
-    def test_incorrect_first_key_compact(self):
-    //         headj -k 'fooo.bar' -c 2 -s 2 <<- JSON
-    //         {"foo":{"bar":[1,2,3,4,5]}}
-    //         JSON
-    //         # Error: Could not find key "fooo" in object "<TransientStreamingJSONObject: TRANSIENT, DONE>".
-    with pytest.raises(JSONProcessingError):
-    _ = self.run_run_headj(
-    '{"foo":{"bar":[1,2,3,4,5]}}', keys=["fooo", "bar"], count=2, skip=2
-    )
-    */
+    #[test]
+    /// headj -k 'fooo.bar' -c 2 -s 2 <<- JSON
+    /// {"foo":{"bar":[1,2,3,4,5]}}
+    /// JSON
+    /// # Error: Could not find key "fooo" in object "<TransientStreamingJSONObject: TRANSIENT, DONE>".
+    fn test_incorrect_first_key_compact() {
+        let e = run_run_headj("{\"foo\":{\"bar\":[1,2,3,4,5]}}", "fooo.bar", 2, 2, false)
+            .unwrap_err()
+            .to_string();
+        assert_eq!("Did not complete JSON copy", e.as_str());
+    }
 }
